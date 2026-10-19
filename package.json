@@ -1,0 +1,30 @@
+{
+  "name": "sequencer-role-bot",
+  "version": "1.0.0",
+  "main": "statusChecker.js",
+  "scripts": {
+    "start": "node bot.js",
+    "verify": "node verifySignature.js",
+    "cron": "node cronJob.js",
+    "status": "node statusChecker.js",
+    "migrate": "node db/migrate.js",
+    "test": "node --require ./test/helpers/isolateEnv.js --test test/*.test.js"
+  },
+  "keywords": [
+    "aztec",
+    "sequencer",
+    "bot",
+    "discord"
+  ],
+  "author": "Aztec Foundation",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.1.0",
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.8.0",
+    "node-cron": "^4.2.1",
+    "pg": "^8.11.3",
+    "winston": "^3.19.0"
+  }
+}

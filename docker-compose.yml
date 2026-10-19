@@ -1,0 +1,69 @@
+services:
+  postgres-db:
+    image: postgres:14
+    container_name: aztec-bot-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      - POSTGRES_DB=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Creates the tables, then exits. Safe to run on every start.
+  migrate:
+    build: .
+    command: ["node", "db/migrate.js"]
+    depends_on:
+      postgres-db:
+        condition: service_healthy
+    environment: &database
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD}@postgres-db:5432/postgres
+
+  # Discord interactions: registration, signature check, role grant.
+  bot:
+    build: .
+    command: ["node", "bot.js"]
+    container_name: aztec-sequencer-bot
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    env_file: .env
+    environment: *database
+
+  # Scheduled status checks and direct messages.
+  status-job:
+    build: .
+    command: ["node", "cronJob.js"]
+    container_name: aztec-sequencer-status-job
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    env_file: .env
+    environment: *database
+
+  # Writes one dump a day to ./backups on the host and keeps the newest files.
+  backup:
+    image: postgres:14
+    container_name: aztec-bot-backup
+    restart: unless-stopped
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      <<: *database
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}
+    volumes:
+      - ./scripts/backup.sh:/backup.sh:ro
+      - ./backups:/backups
+    entrypoint: ["sh", "-c", "while true; do sh /backup.sh || true; sleep 86400; done"]
+
+volumes:
+  postgres_data:

@@ -1,0 +1,9 @@
+This project is based on the public repository
+https://github.com/hendrix-w-team/discord-bot (commit 6016c53, December 2025),
+whose package.json declares the MIT license and names "Hendrix" as the author.
+That repository contains no LICENSE file.
+
+The code has since been changed substantially: start-up fixes, a database
+schema, signature binding, rollup resolution through the Registry, a local
+backup, status-job corrections, colleague management, provider registration
+through the StakingRegistry, and tests.

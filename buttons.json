@@ -1,0 +1,116 @@
+{
+  "registration": {
+    "welcomeHub": [
+      {
+        "customId": "register_new_sequencer",
+        "label": "Register as a Solo Sequencer",
+        "style": "Primary"
+      },
+      {
+        "customId": "register_provider",
+        "label": "Register as a Provider",
+        "style": "Primary"
+      },
+      {
+        "customId": "manage_sequencer",
+        "label": "Manage My Sequencer",
+        "style": "Secondary",
+        "emoji": "⚙️"
+      },
+      {
+        "customId": "what_is_sequencer",
+        "label": "What is a Sequencer?",
+        "style": "Secondary",
+        "emoji": "📚"
+      },
+      {
+        "customId": "need_help",
+        "label": "Need Help?",
+        "style": "Secondary",
+        "emoji": "❓"
+      }
+    ],
+    "networkSelection": {
+      "submit": {
+        "customId": "submit_details_{{network}}",
+        "label": "Submit Details",
+        "style": "Primary"
+      },
+      "cancel": {
+        "customId": "cancel_registration",
+        "label": "Cancel",
+        "style": "Danger"
+      }
+    },
+    "signature": {
+      "submit": {
+        "customId": "submit_signature_{{recordId}}",
+        "label": "Submit Signature",
+        "style": "Success"
+      }
+    }
+  },
+  "management": {
+    "dashboard": {
+      "testnet": [
+        {
+          "customId": "check_status_testnet",
+          "label": "Check My Status",
+          "style": "Secondary",
+          "emoji": "📊"
+        }
+      ],
+      "mainnet": [
+        {
+          "customId": "check_status_mainnet",
+          "label": "Check My Status",
+          "style": "Secondary",
+          "emoji": "📊"
+        },
+        {
+          "customId": "manage_colleagues",
+          "label": "Manage Colleagues",
+          "style": "Primary",
+          "emoji": "👥"
+        }
+      ],
+      "mixed": [
+        {
+          "customId": "manage_colleagues",
+          "label": "Manage Colleagues",
+          "style": "Primary",
+          "emoji": "👥"
+        }
+      ]
+    },
+    "general": [
+      {
+        "customId": "check_status",
+        "label": "Check My Status",
+        "style": "Secondary",
+        "emoji": "📊"
+      },
+      {
+        "customId": "manage_colleagues",
+        "label": "Manage Colleagues",
+        "style": "Primary",
+        "emoji": "👥"
+      }
+    ]
+  },
+  "status": {
+    "check": {
+      "customId": "check_status",
+      "label": "Check My Status",
+      "style": "Secondary",
+      "emoji": "📊"
+    }
+  },
+  "common": {
+    "cancel": {
+      "customId": "cancel_registration",
+      "label": "Cancel",
+      "style": "Danger"
+    }
+  }
+}

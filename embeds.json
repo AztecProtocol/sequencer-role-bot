@@ -1,0 +1,401 @@
+{
+  "statusCheck": {
+    "verification": {
+      "title": "🔍 Checking Your Status",
+      "description": "Just a moment, we're checking your validator status on {{network}}...",
+      "color": "#FFA500",
+      "timestamp": true
+    },
+    "forceInit": {
+      "title": "⚡ Forcing a Status Check",
+      "description": "Starting a real-time status check now.",
+      "color": "#FFA500",
+      "timestamp": true
+    },
+    "forceComplete": {
+      "title": "✅ Status Check Complete",
+      "description": "Okay, we've checked your sequencer status. Here's what we found:",
+      "fields": [
+        { "name": "Network", "value": "{{network}}", "inline": true },
+        { "name": "State", "value": "{{state}}", "inline": true }
+      ],
+      "timestamp": true
+    },
+    "report": {
+      "healthy": {
+        "title": "Your Sequencer Status",
+        "color": "#00FF00",
+        "fields": [
+          { "name": "On-Chain Status", "value": "✅ HEALTHY", "inline": true },
+          { "name": "Staking Balance", "value": "{{balanceText}}", "inline": true },
+          { "name": "Network", "value": "{{network}}", "inline": true }
+        ],
+        "footer": { "text": "Your node is active and your stake is full" },
+        "timestamp": true
+      },
+      "slashed": {
+        "title": "Your Sequencer Status",
+        "color": "#FFFF00",
+        "fields": [
+          { "name": "On-Chain Status", "value": "⚠️ SLASHED", "inline": true },
+          { "name": "Staking Balance", "value": "{{balanceText}}", "inline": true },
+          { "name": "Network", "value": "{{network}}", "inline": true }
+        ],
+        "footer": { "text": "Your node is active, but your stake has been reduced. Your role is safe for now, but we'd recommend checking your node's performance." },
+        "timestamp": true
+      },
+      "inactive": {
+        "title": "Your Sequencer Status",
+        "color": "#FF0000",
+        "fields": [
+          { "name": "On-Chain Status", "value": "❌ INACTIVE", "inline": true },
+          { "name": "Staking Balance", "value": "{{balanceText}}", "inline": true },
+          { "name": "Network", "value": "{{network}}", "inline": true }
+        ],
+        "footer": { "text": "Your node is inactive. Your Discord role is at risk: the bot removes it after 7 days of inactivity." },
+        "timestamp": true
+      },
+      "unknown": {
+        "title": "Your Sequencer Status",
+        "color": "#8B5A96",
+        "fields": [
+          { "name": "On-Chain Status", "value": "❓ UNKNOWN", "inline": true },
+          { "name": "Staking Balance", "value": "Unknown", "inline": true },
+          { "name": "Network", "value": "{{network}}", "inline": true }
+        ],
+        "footer": { "text": "We couldn't determine your validator status right now. Please try again later." },
+        "timestamp": true
+      }
+    }
+  },
+  "dashboard": {
+    "testnet": {
+      "title": "Sequencer Management",
+      "description": "You're currently registered as a **Testnet Sequencer**.",
+      "color": "#AAAAAA",
+      "timestamp": true
+    },
+    "mainnet": {
+      "title": "Sequencer Management",
+      "description": "You're currently registered as a **Mainnet Sequencer**.",
+      "color": "#007BFF",
+      "timestamp": true
+    },
+    "mixed": {
+      "title": "👑 Sequencer Management",
+      "description": "You're registered as both a **Mainnet and Testnet Sequencer**. Choose an option below.",
+      "color": "#FFD700",
+      "timestamp": true
+    },
+    "general": {
+      "title": "⚙️ Sequencer Dashboard",
+      "description": "Welcome to your sequencer dashboard! Here you can check your status and manage your team.",
+      "color": "#8B5A96",
+      "fields": [
+        { "name": "📊 Status", "value": "Check your current status and registration details.", "inline": true },
+        { "name": "👥 Team", "value": "Manage your sequencer colleagues.", "inline": true },
+        { "name": "🔧 Configuration", "value": "Update your sequencer settings.", "inline": false }
+      ],
+      "footer": { "text": "Aztec Network • Privacy-First Blockchain" },
+      "timestamp": true
+    }
+  },
+  "registration": {
+    "welcomeHub": {
+      "title": "Claim Your Sequencer Role",
+      "description": "Choose your path below to start the sequencer registration.",
+      "color": "#8B5A96",
+      "fields": [
+        { "name": "🎯 New here?", "value": "Register as a solo sequencer, or as a staking provider.", "inline": true },
+        { "name": "⚙️ Already Registered?", "value": "Manage your existing sequencer setup.", "inline": true },
+        { "name": "📚 Learn More?", "value": "Find out what sequencers do.", "inline": true }
+      ],
+      "footer": { "text": "Aztec Network" },
+      "timestamp": true
+    },
+    "networkSelection": {
+      "title": "🌐 Network Selection",
+      "description": "Which network are you registering for?",
+      "color": "#8B5A96",
+      "timestamp": true
+    },
+    "inputDetails": {
+      "title": "Step 2: Your Details",
+      "description": "You picked **{{network}}**. Now, please enter your wallet address so we can verify your status.",
+      "color": "#8B5A96",
+      "timestamp": true
+    },
+    "signature": {
+      "title": "✍️ Action Required: Sign Message",
+      "description": "Almost there! Please sign the following message to complete your registration:\n\n**Message to Sign:**\n```\n{{messageToSign}}\n```\n\nOnce you've signed, click the button below to submit.",
+      "fields": [
+        {
+          "name": "How to sign",
+          "value": "**Option 1: Foundry `cast` (command line)**\nWith an encrypted keystore file:\n```\ncast wallet sign --keystore <file> \"<message>\"\n```\nOr enter the key when cast asks for it (the key is not saved in the shell history):\n```\ncast wallet sign --interactive \"<message>\"\n```\n\n**Option 2: Etherscan and a browser wallet**\n1. Open https://etherscan.io/verifiedSignatures and select **Sign Message**.\n2. Connect the wallet that holds the address you entered.\n3. Paste the message exactly and select **Sign Message**.\n4. Copy the **Signature Hash**. Do not select **Publish**.\n\nThis works for mainnet and testnet addresses. Sign within 5 minutes. Never share your private key.",
+          "inline": false
+        }
+      ],
+      "color": "#8B5A96",
+      "timestamp": true
+    },
+    "alreadyRegistered": {
+      "title": "ℹ️ Already Registered",
+      "description": "Looks like you're already registered as a **{{network}}** Sequencer. You can use the 'Manage My Sequencer' options instead.",
+      "color": "#FFA500",
+      "timestamp": true
+    },
+    "alreadyRegisteredCompleted": {
+      "title": "ℹ️ Already Registered",
+      "description": "You've already completed your **{{network}}** sequencer registration. Please use the 'Manage My Sequencer' options.",
+      "color": "#FFA500",
+      "timestamp": true
+    },
+    "required": {
+      "title": "🔒 Registration Required",
+      "description": "This is for registered sequencers only. If that's not you, please start with 'Register as a Solo Sequencer' or 'Register as a Provider' first.",
+      "color": "#FFA500",
+      "timestamp": true
+    }
+  },
+  "notifications": {
+    "providerInactive": {
+      "title": "🚨 Provider Alert: No Active Attester",
+      "description": "Provider **{{providerId}}** on {{network}} has no active attester.",
+      "color": "#FF0000",
+      "fields": [
+        { "name": "Action Required", "value": "⚠️ **A 7-day countdown has started.** If no attester of the provider is active within 7 days, the bot removes your sequencer role.", "inline": false }
+      ],
+      "footer": { "text": "Aztec sequencer role bot" },
+      "timestamp": true
+    },
+    "providerSignerChanged": {
+      "title": "🚨 Provider Alert: Signer Changed",
+      "description": "The address you registered with is no longer the admin or the rewards recipient of provider **{{providerId}}** on {{network}}.",
+      "color": "#FF0000",
+      "fields": [
+        { "name": "Action Required", "value": "⚠️ **A 7-day countdown has started.** The role is removed after 7 days. The current admin or rewards recipient can register with their own Discord account.", "inline": false }
+      ],
+      "footer": { "text": "Aztec sequencer role bot" },
+      "timestamp": true
+    },
+    "providerRecovered": {
+      "title": "✅ Provider Active Again",
+      "description": "Provider **{{providerId}}** on {{network}} has an active attester and a valid signer again. Your role is secure.",
+      "color": "#00FF00",
+      "footer": { "text": "Aztec sequencer role bot" },
+      "timestamp": true
+    },
+    "providerRegistryChanged": {
+      "title": "🚨 Provider Alert: Registry Changed",
+      "description": "The staking registry for {{network}} changed. Your registration for provider **{{providerId}}** is for the old registry.",
+      "color": "#FF0000",
+      "fields": [
+        { "name": "Action Required", "value": "⚠️ **A 7-day countdown has started.** Register again for provider {{providerId}} to keep the role.", "inline": false }
+      ],
+      "footer": { "text": "Aztec sequencer role bot" },
+      "timestamp": true
+    },
+    "critical": {
+      "title": "🚨 Critical Alert: Node Inactive",
+      "description": "Your Aztec node is **INACTIVE**. Please take action immediately!",
+      "color": "#FF0000",
+      "fields": [
+        { "name": "Wallet Address", "value": "`{{walletAddress}}`", "inline": true },
+        { "name": "Network", "value": "{{network}}", "inline": true },
+        { "name": "Current Status", "value": "`INACTIVE`", "inline": true },
+        { "name": "Action Required", "value": "⚠️ **A 7-day countdown has started.** Fix this within 7 days or you will lose your sequencer role.", "inline": false },
+        { "name": "Next Steps", "value": "• Check your node's status\n• Make sure your node is running\n• Verify network connection\n• Ask for help in this server if you need it", "inline": false }
+      ],
+      "footer": { "text": "Aztec sequencer role bot" },
+      "timestamp": true
+    },
+    "warning": {
+      "title": "⚠️ Warning: Stake Slashed",
+      "description": "Your node is running, but your **stake has been reduced**. Please check its performance.",
+      "color": "#FFA500",
+      "fields": [
+        { "name": "Wallet Address", "value": "`{{walletAddress}}`", "inline": true },
+        { "name": "Network", "value": "{{network}}", "inline": true },
+        { "name": "Current Status", "value": "`SLASHED`", "inline": true },
+        { "name": "Current Balance", "value": "{{currentBalance}}", "inline": true },
+        { "name": "Expected Balance", "value": "{{expectedBalance}}", "inline": true },
+        { "name": "Status", "value": "⚠️ **No countdown started.** Just keep a close eye on your node's performance.", "inline": false },
+        { "name": "Recommendation", "value": "• Check node logs for errors\n• Verify validator performance\n• Check that the node is in sync", "inline": false }
+      ],
+      "footer": { "text": "Aztec sequencer role bot" },
+      "timestamp": true
+    },
+    "safe": {
+      "title": "✅ All Clear: Node Healthy",
+      "description": "Your Aztec node is back to **HEALTHY**. Great job!",
+      "color": "#00FF00",
+      "fields": [
+        { "name": "Wallet Address", "value": "`{{walletAddress}}`", "inline": true },
+        { "name": "Network", "value": "{{network}}", "inline": true },
+        { "name": "Current Status", "value": "`HEALTHY`", "inline": true },
+        { "name": "Status", "value": "✅ **Your sequencer role is secure.** No action needed.", "inline": false },
+        { "name": "Message", "value": "Your node is working perfectly with a full stake. Keep up the great work!", "inline": false }
+      ],
+      "footer": { "text": "Aztec sequencer role bot" },
+      "timestamp": true
+    },
+    "removal": {
+      "title": "❌ Sequencer Role Removed",
+      "description": "Your sequencer role has been removed because of unresolved issues.",
+      "color": "#FF0000",
+      "fields": [
+        { "name": "Wallet Address", "value": "`{{walletAddress}}`", "inline": true },
+        { "name": "Network", "value": "{{network}}", "inline": true },
+        { "name": "Action", "value": "Sequencer role removed from Discord.", "inline": true },
+        { "name": "Next Steps", "value": "Please fix your sequencer's status and re-register if you'd like the role back.", "inline": false }
+      ],
+      "footer": { "text": "Aztec sequencer role bot" },
+      "timestamp": true
+    },
+    "legacyWarning": {
+      "title": "⚠️ Sequencer Status Warning",
+      "description": "There's been a change in your sequencer status that needs your attention.",
+      "color": "#FFA500",
+      "fields": [
+        { "name": "Wallet Address", "value": "`{{walletAddress}}`", "inline": true },
+        { "name": "Current Status", "value": "`{{currentStatus}}`", "inline": true },
+        { "name": "Action Required", "value": "Please resolve the issue within 7 days to avoid losing your role.", "inline": false }
+      ],
+      "footer": { "text": "Aztec sequencer role bot" },
+      "timestamp": true
+    },
+    "legacyAllClear": {
+      "title": "✅ Sequencer Status Restored",
+      "description": "Your sequencer status is active again. All clear!",
+      "color": "#00FF00",
+      "fields": [
+        { "name": "Wallet Address", "value": "`{{walletAddress}}`", "inline": true },
+        { "name": "Current Status", "value": "`Active`", "inline": true },
+        { "name": "Status", "value": "Your sequencer role has been fully restored.", "inline": false }
+      ],
+      "footer": { "text": "Aztec sequencer role bot" },
+      "timestamp": true
+    },
+    "legacyRemoval": {
+      "title": "❌ Sequencer Role Removed",
+      "description": "Your sequencer role has been removed due to ongoing issues.",
+      "color": "#FF0000",
+      "fields": [
+        { "name": "Wallet Address", "value": "`{{walletAddress}}`", "inline": true },
+        { "name": "Action", "value": "Sequencer role removed from our Discord.", "inline": true },
+        { "name": "Next Steps", "value": "Please fix your sequencer status and re-register to get the role back.", "inline": false }
+      ],
+      "footer": { "text": "Aztec sequencer role bot" },
+      "timestamp": true
+    }
+  },
+  "info": {
+    "whatIsSequencer": {
+      "title": "📚 What is a Sequencer?",
+      "description": "**Sequencers are a key part of Aztec's private blockchain.**",
+      "color": "#8B5A96",
+      "fields": [
+        { 
+          "name": "🔧 What Do They Do?", 
+          "value": "Sequencers process and order transactions for the network, making sure everything runs smoothly while protecting privacy.", 
+          "inline": false 
+        },
+        { 
+          "name": "💡 Key Benefits", 
+          "value": "• Enable private transactions\n• Keep the network secure\n• Help the network scale", 
+          "inline": true 
+        },
+        { 
+          "name": "🎯 Requirements", 
+          "value": "• An active sequencer node\n• Correct configuration\n• Enough server resources", 
+          "inline": true 
+        },
+        { 
+          "name": "📖 Learn More", 
+          "value": "For a deep dive, check out the docs:\n[Aztec operator documentation](https://docs.aztec.network/operate/operators)", 
+          "inline": false 
+        }
+      ],
+      "footer": { "text": "Aztec Network • Privacy-First Blockchain" },
+      "timestamp": true
+    },
+    "needHelp": {
+      "title": "❓ Need Help?",
+      "description": "**Having trouble? Check these points first.**",
+      "color": "#8B5A96",
+      "fields": [
+        { 
+          "name": "🆘 Common Issues", 
+          "value": "• **Registration failed**: Make sure your sequencer is active.\n• **Signature error**: Check you're signing with the right wallet.\n• **Network issues**: Double-check your node's connection.", 
+          "inline": false 
+        },
+        { 
+          "name": "💬 Get Support", 
+          "value": "**Operator docs:** [docs.aztec.network/operate/operators](https://docs.aztec.network/operate/operators)\n**Troubleshooting:** [Sequencer troubleshooting](https://docs.aztec.network/operate/operators/concepts/sequencer-troubleshooting)", 
+          "inline": true 
+        },
+        { 
+          "name": "🔧 Troubleshooting", 
+          "value": "1. Check if your sequencer is running.\n2. Verify your wallet address format.\n3. Make sure you have enough network resources.", 
+          "inline": true 
+        }
+      ],
+      "footer": { "text": "Aztec Network • Privacy-First Blockchain" },
+      "timestamp": true
+    }
+  },
+  "errors": {
+    "accessDenied": {
+      "title": "🚫 Access Denied",
+      "description": "**Only Mainnet Sequencers can manage colleagues.**\n\nYou need an own completed Mainnet registration to use this feature. A colleague cannot manage colleagues.",
+      "color": "#FF0000",
+      "timestamp": true
+    }
+  },
+  "registrationProcess": {
+    "verificationRequest": {
+      "title": "🔍 Verifying Your Request",
+      "description": "Checking your status on-chain, hang tight...",
+      "color": "#FFA500",
+      "timestamp": true
+    },
+    "retryVerification": {
+      "title": "🔄 Retrying Verification",
+      "description": "That didn't work. Let's try checking your on-chain status again.",
+      "color": "#FFA500",
+      "timestamp": true
+    },
+    "rpcFailure": {
+      "title": "⏳ Verification Delayed",
+      "description": "The network is slow right now, so the check did not finish. Please start the registration again in a few minutes.",
+      "color": "#FFA500",
+      "timestamp": true
+    },
+    "failure": {
+      "title": "❌ Registration Failed",
+      "description": "Signature verification failed. Please double-check that you're using the right wallet and signing the correct message.",
+      "color": "#FF0000",
+      "timestamp": true
+    },
+	    "inactiveValidator": {
+      "title": "❌ Inactive Validator Detected",
+      "description": "Your {{tokenName}} sequencer is currently **INACTIVE** and cannot complete registration.\n\nPlease ensure your sequencer node is running and active before attempting registration again.",
+      "color": "#FF0000",
+      "timestamp": true
+    },
+    "success": {
+      "title": "✅ Registration Complete!",
+      "description": "You're all set! Your registration is complete and you now have access to all sequencer features.",
+      "color": "#00FF00",
+      "timestamp": true
+    }
+  },
+  "management": {
+    "colleagueSuccess": {
+      "title": "✅ Success",
+      "description": "Your colleague list has been updated.",
+      "color": "#00FF00",
+      "timestamp": true
+    }
+  }
+}
