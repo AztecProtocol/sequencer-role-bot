@@ -184,14 +184,16 @@ async function reportFailedRemoval(pool, table, id, username, userId, network, e
   await logToAdminChannel(`⚠️ Role removal failed for ${username} (${userId}) on ${network}: ${error}. The job tries again in the next run.`);
 }
 
-// Grant sequencer role to user
+// Grant a role. Returns null when the member has the role, else the error text.
 async function grantSequencerRole(discordUserId, roleId) {
   try {
     const guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID);
     await memberRoles.grantRole(guild, discordUserId, roleId);
     logger.info(`Role granted to ${discordUserId}`);
+    return null;
   } catch (error) {
     logger.error(`Failed to grant role to ${discordUserId}:`, error.message);
+    return error.message || String(error);
   }
 }
 
@@ -302,20 +304,27 @@ async function manageColleagueRoles(managerDiscordId, managerUsername, action, n
         );
         
         if (updatedUsername) {
-          // Grant network-specific roles based on manager's registrations
-          let rolesGrantedForColleague = 0;
-          
+          // Grant network-specific roles based on manager's registrations.
+          // No retry state for a colleague: the admins are told.
+          let grantFailed = false;
           for (const reg of managerRegistrations.rows) {
             const networkRoleId = getDiscordRoleId(reg.network.toLowerCase());
-            if (networkRoleId) {
-              await grantSequencerRole(colleague.colleague_user_id, networkRoleId);
-              rolesGrantedForColleague++;
-              logger.info(`✅ Granted ${reg.network} role to ${updatedUsername}`);
+            if (!networkRoleId) continue;
+            const error = await grantSequencerRole(colleague.colleague_user_id, networkRoleId);
+            if (error) {
+              await logToAdminChannel(`⚠️ Role grant failed for colleague ${colleague.colleague_user_id} of ${managerUsername} on ${reg.network.toLowerCase()}: ${error}.`);
+              grantFailed = true;
+              continue;
             }
+            logger.info(`✅ Granted ${reg.network} role to ${updatedUsername}`);
           }
-          
-          successCount++;
-          console.log(`${actionText} ${updatedUsername}`);
+
+          if (grantFailed) {
+            failureCount++;
+          } else {
+            successCount++;
+            console.log(`${actionText} ${updatedUsername}`);
+          }
         } else {
           failureCount++;
           console.error(`Failed to update colleague status`);
