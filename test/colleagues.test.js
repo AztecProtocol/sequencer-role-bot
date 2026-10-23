@@ -96,6 +96,20 @@ test('colleagues of an operator', { skip }, async (t) => {
     assert.ok(bot.adminMessages.some((m) => m.includes('⚠️ Role removal failed for colleague 900000000000000003 of operator on mainnet: Service Unavailable.')), bot.adminMessages.join('\n'));
   });
 
+  await t.test('a failed colleague role grant on recovery is reported to the admins', async () => {
+    const attester = await operatorWithAttester(OPERATOR);
+    await addColleague(OPERATOR, COLLEAGUE);
+    attester.set('INACTIVE');
+    await bot.job.runGuardianCheck();
+
+    bot.failRoleGrants = true;
+    attester.set('HEALTHY');
+    await bot.job.runGuardianCheck();
+    bot.failRoleGrants = false;
+
+    assert.ok(bot.adminMessages.some((m) => m.includes('⚠️ Role grant failed for colleague 900000000000000003 of operator on mainnet: Missing Permissions.')), bot.adminMessages.join('\n'));
+  });
+
   await t.test('a colleague who is also a registered operator keeps the own role', async () => {
     const attester = await operatorWithAttester(OPERATOR);
     await operatorWithAttester(COLLEAGUE);

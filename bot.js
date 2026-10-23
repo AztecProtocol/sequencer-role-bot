@@ -30,6 +30,7 @@ const PROVIDER_COMPLETE_REPLIES = {
   registry_changed: '❌ The staking registry changed. Please start the registration again.'
 };
 const logger = require('./utils/logger.js');
+const memberRoles = require('./utils/memberRoles.js');
 
 // A network is offered only when it is configured. An old button or a
 // crafted id for a different network gets NETWORK_NOT_AVAILABLE.
@@ -45,12 +46,10 @@ dotenv.config();
 
 // Initialize Discord client with necessary intents
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.DirectMessages,
-    GatewayIntentBits.GuildMessages,
-  ],
+  // Only Guilds: the bot reacts to its own interactions and changes roles
+  // through REST (utils/memberRoles.js), so it needs no member or message events.
+  // Server Members is a privileged intent that Discord reviews for large apps.
+  intents: [GatewayIntentBits.Guilds],
 });
 
 // Create the slash command
@@ -712,31 +711,20 @@ async function managesColleagues(userId) {
 }
 const MAX_COLLEAGUES = 10;
 
-// Give a colleague each network role of the manager that the colleague does
-// not have yet. Returns the number of those roles the colleague now holds and
-// the networks whose grant failed ({ network, error }).
+// Give a colleague each network role of the manager. Discord accepts a grant
+// of a role that the colleague has already. Returns the number of those roles
+// the colleague now holds and the networks whose grant failed ({ network, error }).
 async function grantColleagueRoles(guild, managerId, colleagueId) {
   const result = { held: 0, failed: [] };
   const networks = await managerNetworks(getPool(), managerId);
-  let member;
-  try {
-    member = await guild.members.fetch(colleagueId);
-  } catch (error) {
-    result.failed = networks.map((network) => ({ network, error: error.message }));
-    return result;
-  }
   for (const network of networks) {
     const roleId = getDiscordRoleId(network.toLowerCase());
     if (!roleId) {
       result.failed.push({ network, error: 'no role id configured' });
       continue;
     }
-    if (member.roles.cache.has(roleId)) {
-      result.held += 1;
-      continue;
-    }
     try {
-      await member.roles.add(roleId);
+      await memberRoles.grantRole(guild, colleagueId, roleId);
       result.held += 1;
     } catch (error) {
       result.failed.push({ network, error: error.message });
@@ -1976,12 +1964,11 @@ client.on('interactionCreate', async (interaction) => {
 
           // Remove each network role that the colleague no longer has through a different path.
           try {
-            const member = await interaction.guild.members.fetch(colleagueId);
             for (const network of ['testnet', 'mainnet']) {
               const roleId = getDiscordRoleId(network);
-              if (roleId && member.roles.cache.has(roleId) && !(await keepsRole(pool, colleagueId, network))) {
-                await member.roles.remove(roleId);
-              }
+              if (!roleId || (await keepsRole(pool, colleagueId, network))) continue;
+              const roleError = await memberRoles.removeRole(interaction.guild, colleagueId, roleId);
+              if (roleError) console.warn(`Could not remove the ${network} role of colleague ${colleagueId}:`, roleError);
             }
           } catch (roleError) {
             console.warn(`Could not remove the role of colleague ${colleagueId}:`, roleError.message);

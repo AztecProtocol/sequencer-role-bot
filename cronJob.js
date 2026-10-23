@@ -14,18 +14,17 @@ const { formatEther } = require('ethers');
 const dotenv = require('dotenv');
 const cron = require('node-cron');
 const logger = require('./utils/logger.js');
+const memberRoles = require('./utils/memberRoles.js');
 
 // Load environment variables
 dotenv.config();
 
 // Initialize Discord client for DM operations
 const discordClient = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.DirectMessages,
-    GatewayIntentBits.GuildMessages
-  ]
+  // Only Guilds: the bot reacts to its own interactions and changes roles
+  // through REST (utils/memberRoles.js), so it needs no member or message events.
+  // Server Members is a privileged intent that Discord reviews for large apps.
+  intents: [GatewayIntentBits.Guilds]
 });
 
 // A network upgrade changes the canonical rollup. Only the status job posts
@@ -143,31 +142,22 @@ async function sendRemovalEmbed(discordUserId, walletAddress, network) {
   }
 }
 
-// Discord error code for a member who is not in the server.
-const UNKNOWN_MEMBER = 10007;
-
 // Remove a role. Returns null when the role is gone (removed now, the member
 // does not have it, or the member is not in the server), else the error text.
 async function tryRemoveSequencerRole(discordUserId, roleId) {
+  let error;
   try {
     const guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID);
-    const member = await guild.members.fetch(discordUserId);
-    
-    if (member.roles.cache.has(roleId)) {
-      await member.roles.remove(roleId);
-      logger.info(`Role removed from ${discordUserId}`);
-    } else {
-      logger.info(`User ${discordUserId} doesn't have the role`);
-    }
-    return null;
-  } catch (error) {
-    if (error.code === UNKNOWN_MEMBER) {
-      logger.info(`User ${discordUserId} is not in the server`);
-      return null;
-    }
-    logger.error(`Failed to remove role from ${discordUserId}:`, error.message);
-    return error.message || String(error);
+    error = await memberRoles.removeRole(guild, discordUserId, roleId);
+  } catch (fetchError) {
+    error = fetchError.message || String(fetchError);
   }
+  if (error) {
+    logger.error(`Failed to remove role from ${discordUserId}:`, error);
+    return error;
+  }
+  logger.info(`Role removed from ${discordUserId} (or not held)`);
+  return null;
 }
 
 // Returns true when the role is gone, false on any other error.
@@ -194,21 +184,16 @@ async function reportFailedRemoval(pool, table, id, username, userId, network, e
   await logToAdminChannel(`⚠️ Role removal failed for ${username} (${userId}) on ${network}: ${error}. The job tries again in the next run.`);
 }
 
-// Grant sequencer role to user
+// Grant a role. Returns null when the member has the role, else the error text.
 async function grantSequencerRole(discordUserId, roleId) {
   try {
     const guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID);
-    const member = await guild.members.fetch(discordUserId);
-    const role = await guild.roles.fetch(roleId);
-    
-    if (!member.roles.cache.has(roleId)) {
-      await member.roles.add(roleId);
-      logger.info(`Role granted to ${discordUserId}`);
-    } else {
-      logger.info(`User ${discordUserId} already has the role`);
-    }
+    await memberRoles.grantRole(guild, discordUserId, roleId);
+    logger.info(`Role granted to ${discordUserId}`);
+    return null;
   } catch (error) {
     logger.error(`Failed to grant role to ${discordUserId}:`, error.message);
+    return error.message || String(error);
   }
 }
 
@@ -319,20 +304,27 @@ async function manageColleagueRoles(managerDiscordId, managerUsername, action, n
         );
         
         if (updatedUsername) {
-          // Grant network-specific roles based on manager's registrations
-          let rolesGrantedForColleague = 0;
-          
+          // Grant network-specific roles based on manager's registrations.
+          // No retry state for a colleague: the admins are told.
+          let grantFailed = false;
           for (const reg of managerRegistrations.rows) {
             const networkRoleId = getDiscordRoleId(reg.network.toLowerCase());
-            if (networkRoleId) {
-              await grantSequencerRole(colleague.colleague_user_id, networkRoleId);
-              rolesGrantedForColleague++;
-              logger.info(`✅ Granted ${reg.network} role to ${updatedUsername}`);
+            if (!networkRoleId) continue;
+            const error = await grantSequencerRole(colleague.colleague_user_id, networkRoleId);
+            if (error) {
+              await logToAdminChannel(`⚠️ Role grant failed for colleague ${colleague.colleague_user_id} of ${managerUsername} on ${reg.network.toLowerCase()}: ${error}.`);
+              grantFailed = true;
+              continue;
             }
+            logger.info(`✅ Granted ${reg.network} role to ${updatedUsername}`);
           }
-          
-          successCount++;
-          console.log(`${actionText} ${updatedUsername}`);
+
+          if (grantFailed) {
+            failureCount++;
+          } else {
+            successCount++;
+            console.log(`${actionText} ${updatedUsername}`);
+          }
         } else {
           failureCount++;
           console.error(`Failed to update colleague status`);

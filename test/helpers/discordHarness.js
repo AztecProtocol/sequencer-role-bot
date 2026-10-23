@@ -95,7 +95,16 @@ async function loadBot(serverUrl, databaseName) {
     const embed = payload && payload.embeds && payload.embeds[0];
     return embed ? (embed.data || embed).title : payload && payload.content;
   };
-  const guild = { id: '1', members: { fetch: async (id) => member(id) }, roles: { fetch: async () => ({}) } };
+  // addRole and removeRole are the REST calls that the bot uses for role changes.
+  const guild = {
+    id: '1',
+    members: {
+      fetch: async (id) => member(id),
+      addRole: async ({ user, role }) => member(user).roles.add(role),
+      removeRole: async ({ user, role }) => member(user).roles.remove(role)
+    },
+    roles: { fetch: async () => ({}) }
+  };
   // All text of an answer: title, description and field names and values.
   const text = (payload) => {
     const embed = payload && payload.embeds && payload.embeds[0];
@@ -175,6 +184,7 @@ async function loadBot(serverUrl, databaseName) {
 
   const harness = {
     adminMessages,
+    clients,
     set failRoleGrants(value) { flags.failRoleGrants = value; },
     get failRoleGrants() { return flags.failRoleGrants; },
     set failRoleRemovals(value) { flags.failRoleRemovals = value; },
