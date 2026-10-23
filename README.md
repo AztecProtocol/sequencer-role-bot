@@ -120,8 +120,13 @@ Copy `.env.example` to `.env` and fill it in. The file explains each value.
 
 ## Run
 
+Use Node 24.22.1 for local tools (`nvm install && nvm use`). The shared image
+contains this runtime and a checked Debian CA bundle for migrate, bot and
+status-job. Rebuild all three before starting them:
+
 ```bash
-docker compose up -d --build
+docker compose build --pull --no-cache
+docker compose up -d --no-build
 ```
 
 This starts Postgres, creates the tables, then starts the bot and the status
