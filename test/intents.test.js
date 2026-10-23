@@ -7,8 +7,8 @@ const { loadBot } = require('./helpers/discordHarness.js');
 const url = process.env.TEST_DATABASE_URL;
 const skip = url ? false : 'TEST_DATABASE_URL is not set';
 
-// The bot reacts only to its own interactions and reads single members
-// through REST, so it subscribes to no member or message events. Server
+// The bot reacts only to its own interactions and changes roles through
+// REST, so it subscribes to no member or message events. Server
 // Members is a privileged intent that Discord reviews for large servers.
 test('each bot client asks only for the Guilds intent', { skip }, async (t) => {
   const bot = await loadBot(url, 'bot_intents');

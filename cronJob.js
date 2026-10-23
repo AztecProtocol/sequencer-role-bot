@@ -14,14 +14,15 @@ const { formatEther } = require('ethers');
 const dotenv = require('dotenv');
 const cron = require('node-cron');
 const logger = require('./utils/logger.js');
+const memberRoles = require('./utils/memberRoles.js');
 
 // Load environment variables
 dotenv.config();
 
 // Initialize Discord client for DM operations
 const discordClient = new Client({
-  // Only Guilds: the bot reacts to its own interactions and reads single
-  // members through REST, so it needs no member or message events.
+  // Only Guilds: the bot reacts to its own interactions and changes roles
+  // through REST (utils/memberRoles.js), so it needs no member or message events.
   // Server Members is a privileged intent that Discord reviews for large apps.
   intents: [GatewayIntentBits.Guilds]
 });
@@ -141,31 +142,22 @@ async function sendRemovalEmbed(discordUserId, walletAddress, network) {
   }
 }
 
-// Discord error code for a member who is not in the server.
-const UNKNOWN_MEMBER = 10007;
-
 // Remove a role. Returns null when the role is gone (removed now, the member
 // does not have it, or the member is not in the server), else the error text.
 async function tryRemoveSequencerRole(discordUserId, roleId) {
+  let error;
   try {
     const guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID);
-    const member = await guild.members.fetch(discordUserId);
-    
-    if (member.roles.cache.has(roleId)) {
-      await member.roles.remove(roleId);
-      logger.info(`Role removed from ${discordUserId}`);
-    } else {
-      logger.info(`User ${discordUserId} doesn't have the role`);
-    }
-    return null;
-  } catch (error) {
-    if (error.code === UNKNOWN_MEMBER) {
-      logger.info(`User ${discordUserId} is not in the server`);
-      return null;
-    }
-    logger.error(`Failed to remove role from ${discordUserId}:`, error.message);
-    return error.message || String(error);
+    error = await memberRoles.removeRole(guild, discordUserId, roleId);
+  } catch (fetchError) {
+    error = fetchError.message || String(fetchError);
   }
+  if (error) {
+    logger.error(`Failed to remove role from ${discordUserId}:`, error);
+    return error;
+  }
+  logger.info(`Role removed from ${discordUserId} (or not held)`);
+  return null;
 }
 
 // Returns true when the role is gone, false on any other error.
@@ -196,15 +188,8 @@ async function reportFailedRemoval(pool, table, id, username, userId, network, e
 async function grantSequencerRole(discordUserId, roleId) {
   try {
     const guild = await discordClient.guilds.fetch(process.env.DISCORD_GUILD_ID);
-    const member = await guild.members.fetch(discordUserId);
-    const role = await guild.roles.fetch(roleId);
-    
-    if (!member.roles.cache.has(roleId)) {
-      await member.roles.add(roleId);
-      logger.info(`Role granted to ${discordUserId}`);
-    } else {
-      logger.info(`User ${discordUserId} already has the role`);
-    }
+    await memberRoles.grantRole(guild, discordUserId, roleId);
+    logger.info(`Role granted to ${discordUserId}`);
   } catch (error) {
     logger.error(`Failed to grant role to ${discordUserId}:`, error.message);
   }
