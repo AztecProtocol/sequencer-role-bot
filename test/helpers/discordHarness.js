@@ -175,6 +175,7 @@ async function loadBot(serverUrl, databaseName) {
 
   const harness = {
     adminMessages,
+    clients,
     set failRoleGrants(value) { flags.failRoleGrants = value; },
     get failRoleGrants() { return flags.failRoleGrants; },
     set failRoleRemovals(value) { flags.failRoleRemovals = value; },

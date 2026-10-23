@@ -45,12 +45,10 @@ dotenv.config();
 
 // Initialize Discord client with necessary intents
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.DirectMessages,
-    GatewayIntentBits.GuildMessages,
-  ],
+  // Only Guilds: the bot reacts to its own interactions and reads single
+  // members through REST, so it needs no member or message events.
+  // Server Members is a privileged intent that Discord reviews for large apps.
+  intents: [GatewayIntentBits.Guilds],
 });
 
 // Create the slash command

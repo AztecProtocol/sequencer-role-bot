@@ -105,7 +105,9 @@ answers, but reports every attester as inactive.
 ## Discord setup
 
 1. Create an application and a bot in the Discord developer portal.
-2. Enable the **Server Members** privileged intent.
+2. Leave all privileged intents switched off. The bot asks only for the
+   **Guilds** intent: it reads single members through REST and receives no
+   member or message events.
 3. Invite the bot with the `bot` and `applications.commands` scopes and the
    **Manage Roles** permission.
 4. In the server role list, put the bot's role above the roles it grants.
