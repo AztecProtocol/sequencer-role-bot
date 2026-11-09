@@ -103,7 +103,9 @@ async function loadBot(serverUrl, databaseName) {
       addRole: async ({ user, role }) => member(user).roles.add(role),
       removeRole: async ({ user, role }) => member(user).roles.remove(role)
     },
-    roles: { fetch: async () => ({}) }
+    roles: { fetch: async () => ({}) },
+    // The faucet channel is in this server.
+    channels: { cache: { has: (id) => id === process.env.FAUCET_CHANNEL_ID } }
   };
   // All text of an answer: title, description and field names and values.
   const text = (payload) => {
@@ -172,7 +174,7 @@ async function loadBot(serverUrl, databaseName) {
     return submitSignature(user, pending.id, await wallet.signMessage(pending.message_to_sign));
   }
   async function reset() {
-    await pool.query('TRUNCATE pending_registrations, signature_attempts, colleagues, provider_registrations, provider_attesters, event_cursors RESTART IDENTITY');
+    await pool.query('TRUNCATE pending_registrations, signature_attempts, colleagues, provider_registrations, provider_attesters, event_cursors, faucet_claims, faucet_alerts RESTART IDENTITY');
     roles.clear();
     chain.clear();
     providerChains.clear();

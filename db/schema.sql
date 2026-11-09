@@ -94,3 +94,37 @@ CREATE TABLE IF NOT EXISTS event_cursors (
   last_block BIGINT NOT NULL,
   PRIMARY KEY (network, contract)
 );
+
+-- Testnet faucet: one row per claim. Every limit counts the rows that are not
+-- 'failed'. Amounts are token base units.
+CREATE TABLE IF NOT EXISTS faucet_claims (
+  id SERIAL PRIMARY KEY,
+  discord_user_id TEXT NOT NULL,
+  wallet_address TEXT NOT NULL,
+  tier SMALLINT NOT NULL CHECK (tier IN (1, 2)),
+  amount NUMERIC(78, 0) NOT NULL CHECK (amount > 0),
+  status TEXT NOT NULL CHECK (status IN ('reserved', 'sent', 'confirmed', 'failed')),
+  tx_hash TEXT,
+  nonce BIGINT,
+  error TEXT,
+  waived_at TIMESTAMPTZ,
+  waived_by TEXT,
+  waived_reason TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+-- For a database created before these columns existed.
+ALTER TABLE faucet_claims ADD COLUMN IF NOT EXISTS nonce BIGINT;
+ALTER TABLE faucet_claims ADD COLUMN IF NOT EXISTS waived_at TIMESTAMPTZ;
+ALTER TABLE faucet_claims ADD COLUMN IF NOT EXISTS waived_by TEXT;
+ALTER TABLE faucet_claims ADD COLUMN IF NOT EXISTS waived_reason TEXT;
+CREATE INDEX IF NOT EXISTS faucet_claims_user_idx ON faucet_claims (discord_user_id, created_at);
+CREATE INDEX IF NOT EXISTS faucet_claims_wallet_idx ON faucet_claims (wallet_address, created_at);
+CREATE INDEX IF NOT EXISTS faucet_claims_created_idx ON faucet_claims (created_at);
+
+-- The last time of each faucet alert kind, so that the bot and the status job
+-- together post each kind at most once a day.
+CREATE TABLE IF NOT EXISTS faucet_alerts (
+  kind TEXT PRIMARY KEY,
+  sent_at TIMESTAMPTZ NOT NULL
+);

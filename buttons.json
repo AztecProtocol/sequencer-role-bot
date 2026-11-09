@@ -112,5 +112,10 @@
       "label": "Cancel",
       "style": "Danger"
     }
+  },
+  "faucet": {
+    "panel": [
+      { "customId": "faucet_request", "label": "Request testnet STK", "style": "Primary", "emoji": "🚰" }
+    ]
   }
 }
