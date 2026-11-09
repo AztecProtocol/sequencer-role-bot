@@ -397,5 +397,12 @@
       "color": "#00FF00",
       "timestamp": true
     }
+  },
+  "faucet": {
+    "panel": {
+      "title": "🚰 Aztec Testnet STK Faucet",
+      "description": "Get STK to stake a sequencer on the Aztec testnet (Ethereum Sepolia).\n\n**Who can claim:** members with the Verified role whose Discord account is at least {{accountDays}} days old and who joined this server at least {{serverDays}} days ago.\n\n**How much:** {{amount}} STK per claim.\n• Members: once every {{memberWait}}. Run a testnet sequencer? Register it in the sequencer-role channel to claim every {{operatorWait}}.\n• Testnet sequencer operators (testnet sequencer role): once every {{operatorWait}}, up to {{operatorMax}} STK in 30 days.\n\nOne wallet receives at most {{walletMax}} STK in 30 days. The faucet has a daily limit for everyone together.\n\nYou also need Sepolia ETH for gas. The faucet does not send ETH.",
+      "color": "#2F80ED"
+    }
   }
 }

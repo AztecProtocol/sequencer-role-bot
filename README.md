@@ -164,7 +164,7 @@ npm install
 npm test
 ```
 
-Two groups of tests need a service and are skipped without it:
+Three groups of tests need a service and are skipped without it:
 
 ```bash
 # Schema, backup, registration and status job tests: a disposable Postgres.
@@ -175,6 +175,11 @@ export TEST_DATABASE_URL=postgresql://postgres:test@127.0.0.1:55440/bot_test
 
 # On-chain tests: an Ethereum mainnet RPC. Read-only.
 export TEST_ETH_RPC_URL=<rpc url>
+
+# Faucet live test: one real transfer of 1 STK on Sepolia, from the test
+# wallet to itself. The wallet needs at least 1 STK and some Sepolia ETH for gas.
+export TEST_SEPOLIA_RPC_URL=<sepolia rpc url>
+export TEST_FAUCET_PRIVATE_KEY=<key of the funded test wallet>
 
 npm test
 ```
@@ -187,3 +192,89 @@ npm test
   use a different attester, the operator registers again after the removal.
 - One attester address can be registered by more than one Discord account,
   if the key holder signs a message for each account.
+
+## Testnet faucet
+
+The bot can run a faucet for testnet STK (Sepolia). Members click a button in a
+faucet channel and get STK for a testnet sequencer. It is off unless
+`FAUCET_ENABLED=true`.
+
+**Who can claim:** members with the role in `FAUCET_VERIFIED_ROLE_ID`, an account
+at least `FAUCET_MIN_ACCOUNT_DAYS` old, at least `FAUCET_MIN_SERVER_DAYS` in the
+server, not in a timeout, not quarantined by AutoMod. A sequencer role is not
+required to claim.
+
+**Rules:** every claim has the same fixed amount, `FAUCET_AMOUNT` (default
+200,000 STK). The values below are the defaults. All values are in
+`.env.example`.
+
+| Who | Rule |
+| --- | --- |
+| Member | One claim in 90 days (`FAUCET_MEMBER_WAIT_HOURS`). Whatever the wait value, a member gets at most one claim in any 30 days. |
+| Operator (role in `TESTNET_SEQUENCER_ROLE_ID`) | One claim a week (`FAUCET_OPERATOR_WAIT_HOURS`), at most 400,000 STK in 30 days (`FAUCET_OPERATOR_MAX_30D`). |
+| Mainnet sequencer role | Nothing extra. The member rule applies. |
+| One wallet, any member | At most 400,000 STK in 30 days (`FAUCET_WALLET_MAX_30D`). |
+| The whole faucet | At most 5,000,000 STK in 24 hours (`FAUCET_GLOBAL_MAX_24H`). |
+
+Every limit counts the claims that did not fail. The exception: claims waived by
+`/faucet-reset` no longer count for the member's own wait time and 30-day
+maximum, but they still count for the wallet limit and the daily cap (see
+"Reset a member"). Operators also need Sepolia ETH: for the stake transaction
+and for the sequencer's publisher account. The faucet sends STK only.
+All values can change without a new release: edit `.env` and restart.
+
+**Reset a member:** `/faucet-reset member:@user reason:...` needs the Manage
+Roles permission and works in any channel of the server that holds the faucet
+channel. In another server it refuses. Use a normal text channel for the
+faucet, not a thread: an archived thread is not in the bot's cache, and the
+reset then refuses. The answer is only visible to the
+staff member. The command waives all confirmed claims of the member, so the
+member can claim again at once. A waived claim no longer counts for the wait
+time and the 30-day maximum of that member. It still counts for the wallet limit
+(`FAUCET_WALLET_MAX_30D`) and the daily cap (`FAUCET_GLOBAL_MAX_24H`), because
+that STK left the faucet. The command refuses while a claim of the member is
+`reserved` or `sent`: settle that claim first (see Operation), then run the
+reset again. A reset that waives at least one claim posts one line to
+`ADMIN_LOG_CHANNEL_ID` with the staff member and the reason.
+
+**Setup:**
+
+1. Create a faucet wallet. Put its key in `FAUCET_PRIVATE_KEY`, never in git or chat.
+2. Send STK and some Sepolia ETH (about 0.5) to the wallet.
+3. Create the faucet channel: members can read but not write; only the verified
+   role can see it. The bot role needs View Channel, Send Messages, Embed Links
+   and Read Message History there.
+4. Set `FAUCET_ENABLED=true`, `FAUCET_CHANNEL_ID`, `FAUCET_VERIFIED_ROLE_ID` and
+   restart. A wrong value turns the faucet off and posts an alert in the admin
+   channel; the rest of the bot keeps running. The alert names the variable.
+5. In the faucet channel, run `/faucet-panel`. It needs the Manage Roles
+   permission.
+
+**Operation:**
+
+- Each claim posts one line to `ADMIN_LOG_CHANNEL_ID`. Each failed transfer
+  posts one line. A low wallet balance, the daily cap and an unknown
+  transaction post at most once a day per kind (unknown: once a day per claim).
+- Recovery and the balance check also run in the 6-hour status job. The status
+  job reads `AZTEC_RPC_URL` and the `FAUCET_*` values from the same `.env`. To
+  change a value or to stop the faucet, restart both the bot and the status
+  job (`docker compose up -d` after you edit `.env`).
+- Above the gas price in `FAUCET_MAX_FEE_GWEI` (default 100 gwei) the faucet
+  does not sign: the member gets the failed answer and staff get a line.
+- To stop the faucet: `FAUCET_ENABLED=false` and restart. The panel stays; the
+  button then answers that the faucet is off.
+- A claim row with status `sent` that the RPC does not know keeps counting.
+  The unknown-transaction alert names the claim id, the hash and the nonce of
+  the signed transaction; the `nonce` column of `faucet_claims` holds the same
+  value. Check the hash on Etherscan, then set the row by hand:
+  `UPDATE faucet_claims SET status = 'failed', updated_at = NOW() WHERE id = <id>;`
+  Set the row to `failed` only after the faucet wallet page on Etherscan shows
+  a latest sent nonce equal to or above the `nonce` of that row, from a
+  different transaction. Before that, the signed transaction can still land,
+  and the member would be paid twice.
+- A transaction stuck with too-low gas blocks later claims: they reuse its
+  nonce, stay pending, and raise unknown-transaction alerts. Staff replace or
+  cancel the stuck transaction from the faucet wallet.
+- To give a member quota back for confirmed claims, use `/faucet-reset`. The
+  manual steps above stay for a claim that is `sent` with an unknown
+  transaction: `/faucet-reset` refuses until that claim is settled.

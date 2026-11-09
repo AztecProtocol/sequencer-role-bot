@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, InteractionType, PermissionFlagsBits, Events, MessageFlags } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle, InteractionType, PermissionFlagsBits, InteractionContextType, Events, MessageFlags } = require('discord.js');
 const { getEmbed, getButtons, getActionRows } = require('./utils/embedManager.js');
 const dotenv = require('dotenv');
 const { getPool } = require('./db/db.js');
@@ -31,6 +31,10 @@ const PROVIDER_COMPLETE_REPLIES = {
 };
 const logger = require('./utils/logger.js');
 const memberRoles = require('./utils/memberRoles.js');
+const { loadFaucetConfigSafely } = require('./faucet/config.js');
+const faucetSender = require('./faucet/sender.js');
+const { createFaucet, BUTTON_ID: FAUCET_BUTTON_ID, FORM_ID: FAUCET_FORM_ID } = require('./faucet/flow.js');
+const { createPostAlert, NO_MENTIONS } = require('./utils/adminPost.js');
 
 // A network is offered only when it is configured. An old button or a
 // crafted id for a different network gets NETWORK_NOT_AVAILABLE.
@@ -67,6 +71,33 @@ const checkStatusNowCommand = new SlashCommandBuilder()
   .setDescription('Check your sequencer status now')
   .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles);
 
+const faucetPanelCommand = new SlashCommandBuilder()
+  .setName('faucet-panel')
+  .setDescription('Post the testnet faucet panel in this channel')
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles);
+
+const faucetResetCommand = new SlashCommandBuilder()
+  .setName('faucet-reset')
+  .setDescription('Let a member claim from the testnet faucet again')
+  .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles)
+  .setContexts(InteractionContextType.Guild)
+  .addUserOption((option) => option.setName('member').setDescription('The member whose claims to reset').setRequired(true))
+  .addStringOption((option) => option.setName('reason').setDescription('Why (shown in the admin channel)').setRequired(false).setMaxLength(200));
+
+// A wrong faucet setting turns the faucet off; the rest of the bot keeps
+// running. The admin channel gets one line after login (ready event).
+const { config: faucetConfig, notice: faucetConfigNotice } = loadFaucetConfigSafely();
+if (faucetConfigNotice) logger.error(faucetConfigNotice);
+for (const warning of faucetConfig.warnings || []) logger.warn(`Faucet: ${warning}`);
+const faucet = createFaucet({
+  config: faucetConfig,
+  pool: getPool(),
+  // Through the module object, so tests can replace createSender.
+  sender: faucetConfig.enabled ? faucetSender.createSender(faucetConfig) : null,
+  post: (message) => logToAdminChannel(message),
+  alert: (message) => postAlert(message)
+});
+
 // Command handler
 client.once(Events.ClientReady, () => {
   logger.info(`✅ Bot is ready! Logged in as ${client.user.tag}`);
@@ -74,10 +105,12 @@ client.once(Events.ClientReady, () => {
   
   // Register slash commands
   registerCommands();
+  faucet.recover();
+  if (faucetConfigNotice) logToAdminChannel(faucetConfigNotice);
 });
 
 async function registerCommands() {
-  const commands = [registerCommand, checkStatusNowCommand];
+  const commands = [registerCommand, checkStatusNowCommand, faucetPanelCommand, faucetResetCommand];
   const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_BOT_TOKEN);
 
   try {
@@ -747,12 +780,16 @@ async function logToAdminChannel(message) {
     const channel = await client.channels.fetch(adminChannelId);
     if (channel) {
       const timestamp = new Date().toISOString();
-      await channel.send(`[${timestamp}] ${message}`);
+      await channel.send({ content: `[${timestamp}] ${message}`, allowedMentions: NO_MENTIONS });
     }
   } catch (error) {
     logger.error('❌ Error logging to admin channel:', error);
   }
 }
+
+// Post an alert to the admin log channel. Unlike logToAdminChannel it throws
+// when the post does not happen, so the caller can free its alert slot.
+const postAlert = createPostAlert(() => client);
 
 // Handle slash command interactions
 client.on('interactionCreate', async (interaction) => {
@@ -852,6 +889,10 @@ client.on('interactionCreate', async (interaction) => {
           });
         }
       }
+    } else if (interaction.commandName === 'faucet-panel') {
+      await faucet.panel(interaction);
+    } else if (interaction.commandName === 'faucet-reset') {
+      await faucet.reset(interaction);
     }
   }
   
@@ -1303,6 +1344,9 @@ client.on('interactionCreate', async (interaction) => {
       }
     }
     
+    else if (interaction.customId === FAUCET_BUTTON_ID) {
+      await faucet.button(interaction);
+    }
     else if (interaction.customId === 'what_is_sequencer') {
       try {
         const sequencerInfoEmbed = getEmbed('info.whatIsSequencer');
@@ -1923,6 +1967,9 @@ client.on('interactionCreate', async (interaction) => {
         console.error('❌ Error in the provider signature step:', error);
         await interaction.editReply({ content: 'There was an error checking your signature. Please try again.' });
       }
+    }
+    else if (interaction.customId === FAUCET_FORM_ID) {
+      await faucet.submit(interaction);
     }
     else if (interaction.customId === 'remove_colleagues_modal') {
       try {

@@ -15,6 +15,10 @@ const dotenv = require('dotenv');
 const cron = require('node-cron');
 const logger = require('./utils/logger.js');
 const memberRoles = require('./utils/memberRoles.js');
+const { loadFaucetConfig } = require('./faucet/config.js');
+const faucetSender = require('./faucet/sender.js');
+const faucetRecovery = require('./faucet/recovery.js');
+const { createPostAlert, NO_MENTIONS } = require('./utils/adminPost.js');
 
 // Load environment variables
 dotenv.config();
@@ -171,11 +175,15 @@ async function logToAdminChannel(message) {
     const channelId = process.env.ADMIN_LOG_CHANNEL_ID;
     if (!channelId) return;
     const channel = await discordClient.channels.fetch(channelId);
-    if (channel) await channel.send(`[${new Date().toISOString()}] ${message}`);
+    if (channel) await channel.send({ content: `[${new Date().toISOString()}] ${message}`, allowedMentions: NO_MENTIONS });
   } catch (error) {
     logger.error('Failed to post to the admin channel:', error.message);
   }
 }
+
+// Post an alert to the admin log channel. Unlike logToAdminChannel it throws
+// when the post does not happen, so the caller can free its alert slot.
+const postAlert = createPostAlert(() => discordClient);
 
 // A removal that Discord refused: the registration goes back to 'at_risk'
 // with its old at_risk_since, so the next run tries again.
@@ -781,6 +789,7 @@ async function initializeAndRun() {
     
     // Run the guardian check
     await runGuardianCheck();
+    await runFaucetCheck();
     
     // Close Discord client
     await discordClient.destroy();
@@ -788,6 +797,33 @@ async function initializeAndRun() {
   } catch (error) {
     console.error('Error initializing guardian check:', error.message);
     process.exit(1);
+  }
+}
+
+// Settle faucet claims that the bot left open and check the faucet wallet.
+// Does nothing when the faucet is off. Never throws: a faucet problem must not
+// stop the sequencer checks.
+async function runFaucetCheck(now = new Date()) {
+  let config;
+  try {
+    config = loadFaucetConfig();
+  } catch (error) {
+    logger.error(`Faucet config error: ${error.message}`);
+    return;
+  }
+  if (!config.enabled) return;
+  let sender = null;
+  try {
+    const pool = getPool();
+    // Through the module object, so tests can replace createSender.
+    sender = faucetSender.createSender(config);
+    await faucetRecovery.settleClaims({ pool, sender, post: postAlert, now, minAgeMs: faucetRecovery.RECOVERY_AGE_MS });
+    await faucetRecovery.checkBalances({ pool, sender, config, unit: await sender.unit(), post: postAlert, now });
+  } catch (error) {
+    logger.error(`Faucet check failed: ${error.message}`);
+  } finally {
+    // Each run makes a new RPC connection: close it, so the 6-hour job does not collect them.
+    if (sender) sender.close();
   }
 }
 
@@ -815,6 +851,7 @@ async function startCronJob() {
     cron.schedule('0 */6 * * *', async () => {
       console.log('\nCron job triggered: Running guardian check...');
       await runGuardianCheck();
+      await runFaucetCheck();
     });
     
     console.log('Cron jobs scheduled successfully');
@@ -836,6 +873,7 @@ if (require.main === module) {
 
 // Export for testing
 module.exports = {
+  runFaucetCheck,
   runGuardianCheck,
   runProviderGuardianCheck,
   startCronJob,
